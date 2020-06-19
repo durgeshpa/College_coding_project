@@ -1,4 +1,5 @@
 pip install pillo
 django 2.2 version
 install crisipy #pip install crisipy
+pip install paytm-pg
 

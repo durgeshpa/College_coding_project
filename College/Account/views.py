@@ -6,6 +6,10 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from .models import Profile
 from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
+from paytm import  checksum
+from django.http import HttpResponse
+MERCHANT_KEY = '4ilhKX%aeEh!&sF%'
 
 
 #from django.core import urlresolvers
@@ -86,3 +90,42 @@ def profile(request):
 	}
 
 	return render(request, 'account/home.html', context)
+
+def payment(request):
+	if request.method == 'POST':
+		param_dict = {
+
+				'MID': 'xYBPCT18489892676697',
+				'ORDER_ID': '345',#str(order.order_id),
+				'TXN_AMOUNT': str(50),#ammount
+				'CUST_ID': 'durgesh160419997@gmail.com',# email field
+				'INDUSTRY_TYPE_ID': 'Retail',
+				'WEBSITE': 'WEBSTAGING',
+				'CHANNEL_ID': 'WEB',
+				'CALLBACK_URL':'http://127.0.0.1:8000/Account/PytmResponse/',
+
+		  }
+		param_dict['CHECKSUMHASH'] = checksum.generate_checksum(param_dict, MERCHANT_KEY)
+		return render(request, 'account/payment.html', {'param_dict': param_dict})
+	else:
+		return render(request, 'account/check.html')
+
+@csrf_exempt
+def PytmResponse(request):
+	# paytm will send you post request here
+	form = request.POST
+	response_dict = {}
+	for i in form.keys():
+		response_dict[i] = form[i]
+		if i == 'CHECKSUMHASH':
+			Checksum = form[i]
+			pass
+
+	verify = checksum.verify_checksum(response_dict, MERCHANT_KEY, Checksum)
+	if verify:
+		if response_dict['RESPCODE'] == '01':
+			print('order successful')
+		else:
+			print('order was not successful because' + response_dict['RESPMSG'])
+	return render(request, 'account/response.html', {'response': response_dict})
+
